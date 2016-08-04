@@ -36,6 +36,38 @@ helpers do
   def display_todos_count(todos)
     "#{todos_remaining_count(todos)} / #{todos_count(todos)}"
   end
+
+  def sort_lists(lists)
+    incomplete_list = {}
+    complete_list = {}
+
+    lists.each_with_index do |list, index|
+      if list_complete?(list)
+        complete_list[index] = list
+      else
+        incomplete_list[index] = list
+      end
+    end
+
+    incomplete_list.each { |id, list| yield list, id }
+    complete_list.each { |id, list| yield list, id }
+  end
+
+  def sort_todos(todos)
+    incomplete_todos = {}
+    complete_todos = {}
+
+    todos.each_with_index do |todo, index|
+      if todo[:completed]
+        complete_todos[index] = todo
+      else
+        incomplete_todos[index] = todo
+      end
+    end
+
+    incomplete_todos.each { |id, todo| yield todo, id }
+    complete_todos.each { |id, todo| yield todo, id }
+  end
 end
 
 # Return an error message if the name is invalid. Return nil if name is valid.
