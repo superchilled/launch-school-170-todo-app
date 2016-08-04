@@ -16,6 +16,24 @@ get '/' do
   redirect '/lists'
 end
 
+helpers do
+  def display_list_status(list)
+    "class='complete'" if list_complete?(list)
+  end
+
+  def display_todos_count(todos)
+    "#{todos_complete(todos)} / #{todos.size}"
+  end
+end
+
+def todos_complete(todos)
+  todos.count { |todo| !todo[:completed] }
+end
+
+def list_complete?(list)
+  !list[:todos].empty? && list[:todos].all? { |todo| todo[:completed] }
+end
+
 # Return an error message if the name is invalid. Return nil if name is valid.
 def error_for_listname(name)
   if !(1..100).cover?(name.size)
