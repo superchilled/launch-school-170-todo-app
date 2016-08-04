@@ -1,6 +1,6 @@
 <ul id="lists">
   <% @lists.each_with_index do |list, index| %>
-    <li <%= display_list_status(list) %>>
+    <li class="<%= list_class(list) %>">
       <a href="/lists/<%= index %>">
         <h2><%= list[:name] %></h2>
         <p><%= display_todos_count(list[:todos]) %></p>

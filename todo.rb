@@ -17,21 +17,25 @@ get '/' do
 end
 
 helpers do
-  def display_list_status(list)
-    "class='complete'" if list_complete?(list)
+  def list_complete?(list)
+    (todos_count(list[:todos]) > 0) && (todos_remaining_count(list[:todos]) == 0)
+  end
+
+  def list_class(list)
+    'complete' if list_complete?(list)
+  end
+
+  def todos_remaining_count(todos)
+    todos.count { |todo| !todo[:completed] }
+  end
+
+  def todos_count(todos)
+    todos.size
   end
 
   def display_todos_count(todos)
-    "#{todos_complete(todos)} / #{todos.size}"
+    "#{todos_remaining_count(todos)} / #{todos_count(todos)}"
   end
-end
-
-def todos_complete(todos)
-  todos.count { |todo| !todo[:completed] }
-end
-
-def list_complete?(list)
-  !list[:todos].empty? && list[:todos].all? { |todo| todo[:completed] }
 end
 
 # Return an error message if the name is invalid. Return nil if name is valid.
