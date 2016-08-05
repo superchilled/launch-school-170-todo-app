@@ -37,36 +37,18 @@ helpers do
     "#{todos_remaining_count(todos)} / #{todos_count(todos)}"
   end
 
-  def sort_lists(lists)
-    incomplete_list = {}
-    complete_list = {}
+  def sort_lists(lists, &block)
+    complete_lists, incomplete_lists = lists.partition { |list| list_complete?(list) }
 
-    lists.each_with_index do |list, index|
-      if list_complete?(list)
-        complete_list[index] = list
-      else
-        incomplete_list[index] = list
-      end
-    end
-
-    incomplete_list.each { |id, list| yield list, id }
-    complete_list.each { |id, list| yield list, id }
+    incomplete_lists.each { |list| yield list, lists.index(list) }
+    complete_lists.each { |list| yield list, lists.index(list) }
   end
 
-  def sort_todos(todos)
-    incomplete_todos = {}
-    complete_todos = {}
+  def sort_todos(todos, &block)
+    complete_todos, incomplete_todos = todos.partition { |todo| todo[:completed] }
 
-    todos.each_with_index do |todo, index|
-      if todo[:completed]
-        complete_todos[index] = todo
-      else
-        incomplete_todos[index] = todo
-      end
-    end
-
-    incomplete_todos.each { |id, todo| yield todo, id }
-    complete_todos.each { |id, todo| yield todo, id }
+    incomplete_todos.each { |todo| yield todo, todos.index(todo) }
+    complete_todos.each { |todo| yield todo, todos.index(todo) }
   end
 end
 
