@@ -6,6 +6,7 @@ require 'tilt/erubis'
 configure do
   enable :sessions
   set :session_secret, 'secret'
+  set :erb, :escape_html => true
 end
 
 before do
@@ -23,6 +24,10 @@ helpers do
 
   def list_class(list)
     'complete' if list_complete?(list)
+  end
+
+  def todo_class(todo)
+    'complete' if todo[:completed]
   end
 
   def todos_remaining_count(todos)
@@ -61,6 +66,13 @@ def error_for_listname(name)
   end
 end
 
+# Return an error message if the list id is invalid. Return nil if id is valid.
+def error_for_listid(id)
+  if id >= session[:lists].size
+    'The specified list was not found.'
+  end
+end
+
 def error_for_todo(name)
   if !(1..100).cover?(name.size)
     'The todo name must be between 1 and 100 characters.'
@@ -82,9 +94,15 @@ end
 # Views a single list
 get '/lists/:id' do
   @list_id = params[:id].to_i
-  @list = session[:lists][@list_id]
 
-  erb :list, layout: :layout
+  error = error_for_listid(@list_id)
+  if error
+    session[:error] = error
+    redirect '/lists'
+  else
+    @list = session[:lists][@list_id]
+    erb :list, layout: :layout
+  end
 end
 
 # Edit an existing todo list
