@@ -45,16 +45,28 @@ helpers do
   def sort_lists(lists, &block)
     complete_lists, incomplete_lists = lists.partition { |list| list_complete?(list) }
 
-    incomplete_lists.each { |list| yield list, lists.index(list) }
-    complete_lists.each { |list| yield list, lists.index(list) }
+    incomplete_lists.each(&block)
+    complete_lists.each(&block)
   end
 
   def sort_todos(todos, &block)
     complete_todos, incomplete_todos = todos.partition { |todo| todo[:completed] }
 
-    incomplete_todos.each { |todo| yield todo, todos.index(todo) }
-    complete_todos.each { |todo| yield todo, todos.index(todo) }
+    incomplete_todos.each(&block)
+    complete_todos.each(&block)
   end
+end
+
+# Finds the next available id to assign to a list
+def next_list_id
+  max = session[:lists].map { |list| list[:id] }.max || 0
+  max + 1
+end
+
+# Finds the next available id to assign to a todo
+def next_todo_id(todos)
+  max = todos.map { |todo| todo[:id] }.max || 0
+  max + 1
 end
 
 # Return an error message if the name is invalid. Return nil if name is valid.
@@ -72,8 +84,8 @@ def error_for_todo(name)
   end
 end
 
-def load_list(index)
-  list = session[:lists][index] if index
+def load_list(list_id)
+  list = session[:lists].select { |list| list[:id] == list_id }.first
   return list if list
 
   session[:error] = 'The specified list was not found.'
@@ -97,7 +109,6 @@ get '/lists/:id' do
   @list_id = params[:id].to_i
   @list = load_list(@list_id)
 
-  @list = session[:lists][@list_id]
   erb :list, layout: :layout
 end
 
@@ -118,7 +129,8 @@ post '/lists' do
     session[:error] = error
     erb :new_list, layout: :layout
   else
-    session[:lists] << { name: list_name, todos: [] }
+    list_id = next_list_id
+    session[:lists] << {id: list_id, name: list_name, todos: [] }
     session[:success] = 'The list has been created.'
     redirect '/lists'
   end
@@ -155,7 +167,7 @@ end
 post '/lists/:id/destroy' do
   id = params[:id].to_i
 
-  session[:lists].delete_at(id)
+  session[:lists].reject! { |list| list[:id] == id }
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     "/lists"
   else
@@ -175,7 +187,8 @@ post '/lists/:list_id/todos' do
     session[:error] = error
     erb :list, layout: :layout
   else
-    @list[:todos] << {name: text, completed: false}
+    id = next_todo_id(@list[:todos])
+    @list[:todos] << {id: id, name: text, completed: false}
     session[:success] = 'The todo was added.'
     redirect "/lists/#{@list_id}"
   end
@@ -187,7 +200,7 @@ post '/lists/:list_id/todos/:todo_id/delete' do
   @list = load_list(@list_id)
   todo_id = params[:todo_id].to_i
 
-  @list[:todos].delete_at(todo_id)
+  @list[:todos].reject! { |todo| todo[:id] == todo_id }
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     status 204
   else
@@ -202,8 +215,9 @@ post '/lists/:list_id/todos/:todo_id' do
   @list = load_list(@list_id)
   todo_id = params[:todo_id].to_i
   is_completed = params[:completed] == 'true'
+  todo = @list[:todos].select { |todo| todo[:id] == todo_id }
 
-  @list[:todos][todo_id][:completed] = is_completed
+  todo.first[:completed] = is_completed
   session[:success] = 'The todo has been updated.'
   redirect "/lists/#{@list_id}"
 end
